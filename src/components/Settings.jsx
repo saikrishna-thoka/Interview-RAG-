@@ -8,7 +8,7 @@ import { useAppStore } from '../store/useAppStore';
 
 export default function Settings() {
   const { 
-    user, theme, setTheme, groqKey, setGroqKey, 
+    user, theme, setTheme, activeSubscription, 
     notifications, markNotificationsRead 
   } = useAppStore();
 
@@ -57,7 +57,7 @@ export default function Settings() {
       <div className="space-y-2">
         <h2 className="text-3xl font-extrabold tracking-tight">System Settings</h2>
         <p className="text-sm text-muted-foreground">
-          Configure your user details, connect your Groq API credentials, and manage your SaaS subscription details.
+          Configure your user details, preferences, and manage your SaaS subscription details.
         </p>
       </div>
 
@@ -226,41 +226,74 @@ export default function Settings() {
               <div className="border-b border-border/60 pb-3 flex justify-between items-center">
                 <div>
                   <h3 className="font-extrabold text-base">Subscription Plan</h3>
-                  <p className="text-xs text-muted-foreground">Manage your SaaS pricing subscriptions and receipts.</p>
+                  <p className="text-xs text-muted-foreground">Manage your SaaS pricing subscriptions, limits, and plans.</p>
                 </div>
                 
                 <span className="px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/25">
-                  Active tier: Free Starter
+                  Active tier: {activeSubscription?.plan_name || 'Free Starter'}
                 </span>
               </div>
 
-              {/* Grid pricing card */}
-              <div className="p-6 bg-gradient-to-tr from-indigo-950/20 to-purple-950/20 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-6 relative overflow-hidden">
-                <div className="absolute inset-0 bg-radial-glow opacity-30 pointer-events-none" />
-                <div className="space-y-1.5 relative z-10">
-                  <div className="flex items-center space-x-2 text-indigo-400">
-                    <Sparkles className="w-4 h-4 animate-bounce" />
-                    <h4 className="font-extrabold text-sm">Upgrade to Pro Developer</h4>
-                  </div>
-                  <p className="text-xs text-muted-foreground max-w-sm">
-                    Unlock unlimited uploads, unlimited diagnostic practice loops, full category grade summaries, and exportable PDF files.
+              {/* Display Current Limits */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 border border-border rounded-2xl">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Resume Upload Limit</span>
+                  <p className="text-sm font-bold text-foreground">
+                    {activeSubscription?.limits?.resumes === 100 ? 'Unlimited (100)' : `${activeSubscription?.limits?.resumes || 1} Resume`}
                   </p>
                 </div>
-
-                <div className="text-center sm:text-right relative z-10 flex-shrink-0">
-                  <div className="flex items-baseline justify-center sm:justify-end mb-3">
-                    <span className="text-3xl font-black font-mono text-white">$19</span>
-                    <span className="text-muted-foreground text-[10px] ml-1.5">/ month</span>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => alert('SSO checkout initiated. Thank you!')}
-                    className="px-4 h-9 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-indigo-700 transition-all cursor-pointer"
-                  >
-                    Upgrade Now
-                  </button>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Interview Questions Limit</span>
+                  <p className="text-sm font-bold text-foreground">
+                    {activeSubscription?.limits?.questions || 10} Questions / Session
+                  </p>
                 </div>
               </div>
+
+              {/* Upgrade or Plan confirmation card */}
+              {(activeSubscription?.plan_name || 'Free Starter').includes('Free') ? (
+                <div className="p-6 bg-gradient-to-tr from-indigo-950/20 to-purple-950/20 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-6 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-radial-glow opacity-30 pointer-events-none" />
+                  <div className="space-y-1.5 relative z-10">
+                    <div className="flex items-center space-x-2 text-indigo-400">
+                      <Sparkles className="w-4 h-4 animate-bounce" />
+                      <h4 className="font-extrabold text-sm">Upgrade to Pro Developer</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      Unlock expanded resume uploads, unlimited interview mock runs, 20 questions per session, and full PDF analytics exports.
+                    </p>
+                  </div>
+
+                  <div className="text-center sm:text-right relative z-10 flex-shrink-0">
+                    <div className="flex items-baseline justify-center sm:justify-end mb-3">
+                      <span className="text-3xl font-black font-mono text-white">$19</span>
+                      <span className="text-muted-foreground text-[10px] ml-1.5">/ month</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => alert('SSO checkout initiated. Thank you!')}
+                      className="px-4 h-9 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-indigo-700 transition-all cursor-pointer"
+                    >
+                      Upgrade Now
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-6">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center space-x-2 text-emerald-400">
+                      <Check className="w-4 h-4" />
+                      <h4 className="font-extrabold text-sm">Active Pro Plan Features Enabled</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      You have unlocked maximum questions (20) per interview and a large resume parsing allowance. Expiration: {activeSubscription?.expires_at ? new Date(activeSubscription.expires_at).toLocaleDateString() : 'N/A'}.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                    Paid Account Active
+                  </span>
+                </div>
+              )}
             </motion.div>
           )}
 

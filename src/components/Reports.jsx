@@ -2,15 +2,25 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FileText, Search, Download, Calendar, 
-  ExternalLink, Sparkles, AlertCircle, CheckCircle, Clock
+  ExternalLink, Sparkles, AlertCircle, CheckCircle, Clock, Trash2
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export default function Reports() {
-  const { reports, selectedReportId, setSelectedReportId } = useAppStore();
+  const { reports, selectedReportId, setSelectedReportId, deleteInterview } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [minScore, setMinScore] = useState(0);
   const [pdfNotification, setPdfNotification] = useState('');
+
+  const handleDeleteReport = async (report) => {
+    if (window.confirm(`Are you sure you want to delete the interview report for ${report.role}?`)) {
+      try {
+        await deleteInterview(report.interviewId || report.id);
+      } catch (err) {
+        alert("Failed to delete interview report.");
+      }
+    }
+  };
 
   // Handle PDF download simulation
   const handleDownloadPdf = (report) => {
@@ -139,6 +149,13 @@ export default function Reports() {
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
+                          <button 
+                            onClick={() => handleDeleteReport(report)}
+                            className="p-1.5 rounded-lg border border-border bg-card hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-all"
+                            title="Delete Interview Report"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -215,14 +232,23 @@ export default function Reports() {
                 </p>
               </div>
 
-              {/* Download trigger */}
-              <button 
-                onClick={() => handleDownloadPdf(selectedReport)}
-                className="w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Report PDF</span>
-              </button>
+              {/* Download & Delete actions */}
+              <div className="flex gap-2.5">
+                <button 
+                  onClick={() => handleDownloadPdf(selectedReport)}
+                  className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export Report PDF</span>
+                </button>
+                <button 
+                  onClick={() => handleDeleteReport(selectedReport)}
+                  className="h-10 px-3 border border-border bg-card hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl transition-all flex items-center justify-center"
+                  title="Delete Report"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
 
             </div>
           ) : (

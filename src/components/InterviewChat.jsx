@@ -90,10 +90,9 @@ export default function InterviewChat() {
 
       // 2. Determine if there are more questions
       const hasMore = currentQuestionIndex + 1 < totalQuestions;
-      const nextQuestion = hasMore ? questions[currentQuestionIndex + 1] : null;
 
       // 3. Save transcript update
-      submitAnswer(answer, evalResult.evaluation, nextQuestion);
+      submitAnswer(answer, evalResult.evaluation, evalResult.score);
 
       // 4. If finished, trigger automatic compilation
       if (!hasMore) {
@@ -216,7 +215,7 @@ export default function InterviewChat() {
                   }`}>
                     {idx + 1}
                   </span>
-                  <p className="line-clamp-2 leading-tight">{q}</p>
+                  <p className="line-clamp-2 leading-tight">{q.question_text || q}</p>
                 </div>
               );
             })}

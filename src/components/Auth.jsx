@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowLeft, Cpu, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Cpu, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { supabase } from '../services/supabaseClient';
+
+const isSupabaseConfigured = !!(
+  import.meta.env.VITE_SUPABASE_URL && 
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export default function Auth() {
-  const { activeView, setActiveView, login, signup } = useAppStore();
+  const { activeView, setActiveView, login, signup, loginWithGoogle } = useAppStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
@@ -22,34 +29,61 @@ export default function Auth() {
       return;
     }
 
-    if (activeView === 'login') {
-      if (!password) {
-        setError('Password is required');
-        return;
+    setLoading(true);
+
+    try {
+      if (activeView === 'login') {
+        if (!password) {
+          setError('Password is required');
+          setLoading(false);
+          return;
+        }
+        await login(email, password);
+      } else if (activeView === 'signup') {
+        if (!name) {
+          setError('Name is required');
+          setLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters');
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+        await signup(email, password, name);
+        setSuccessMsg('Account created successfully! Check email for verification if needed.');
+      } else if (activeView === 'forgot-password') {
+        if (isSupabaseConfigured) {
+          const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`
+          });
+          if (resetErr) throw resetErr;
+        }
+        setSuccessMsg('Reset instructions sent! Please check your inbox.');
       }
-      login(email, password);
-    } else if (activeView === 'signup') {
-      if (!name) {
-        setError('Name is required');
-        return;
-      }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-      signup(email, password, name);
-    } else if (activeView === 'forgot-password') {
-      setSuccessMsg('Reset instructions sent! Please check your inbox.');
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Authentication failed. Please verify credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Mock login via Google
-    login('google.candidate@gmail.com', 'google-sso-token-xyz');
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Google Sign-In failed.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,7 +102,8 @@ export default function Auth() {
         {/* Back to landing */}
         <button 
           onClick={() => setActiveView('landing')}
-          className="inline-flex items-center space-x-2 text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          disabled={loading}
+          className="inline-flex items-center space-x-2 text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors disabled:opacity-40"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Home</span>
@@ -100,7 +135,7 @@ export default function Auth() {
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-xs flex items-center space-x-2 animate-pulse">
+          <div className="mb-4 p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-xs flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{successMsg}</span>
           </div>
@@ -117,8 +152,9 @@ export default function Auth() {
                   type="text" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
+                  disabled={loading}
                   placeholder="Jane Doe" 
-                  className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                  className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                 />
               </div>
             </div>
@@ -132,8 +168,9 @@ export default function Auth() {
                 type="email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
                 placeholder="you@example.com" 
-                className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
               />
             </div>
           </div>
@@ -146,7 +183,8 @@ export default function Auth() {
                   <button 
                     type="button"
                     onClick={() => setActiveView('forgot-password')} 
-                    className="text-[10px] text-indigo-500 hover:underline"
+                    disabled={loading}
+                    className="text-[10px] text-indigo-500 hover:underline disabled:opacity-40"
                   >
                     Forgot Password?
                   </button>
@@ -158,8 +196,9 @@ export default function Auth() {
                   type="password" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
                   placeholder="••••••••" 
-                  className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                  className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                 />
               </div>
             </div>
@@ -174,8 +213,9 @@ export default function Auth() {
                   type="password" 
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
                   placeholder="••••••••" 
-                  className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                  className="w-full h-10 pl-10 pr-4 bg-muted/40 hover:bg-muted/70 focus:bg-background border border-border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                 />
               </div>
             </div>
@@ -183,11 +223,15 @@ export default function Auth() {
 
           <button 
             type="submit"
-            className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-md mt-6 flex items-center justify-center"
+            disabled={loading}
+            className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-md mt-6 flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
           >
-            {activeView === 'login' && 'Log In'}
-            {activeView === 'signup' && 'Create Account'}
-            {activeView === 'forgot-password' && 'Send Reset Link'}
+            {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
+            <span>
+              {activeView === 'login' && 'Log In'}
+              {activeView === 'signup' && 'Create Account'}
+              {activeView === 'forgot-password' && 'Send Reset Link'}
+            </span>
           </button>
         </form>
 
@@ -201,10 +245,11 @@ export default function Auth() {
               </span>
             </div>
 
-            {/* Google OAuth mockup */}
+            {/* Google OAuth button */}
             <button 
               onClick={handleGoogleLogin}
-              className="w-full h-11 border border-border bg-muted/20 hover:bg-muted/50 rounded-xl flex items-center justify-center space-x-3 text-sm font-semibold transition-colors"
+              disabled={loading}
+              className="w-full h-11 border border-border bg-muted/20 hover:bg-muted/50 rounded-xl flex items-center justify-center space-x-3 text-sm font-semibold transition-colors disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -236,7 +281,8 @@ export default function Auth() {
               Don't have an account?{' '}
               <button 
                 onClick={() => setActiveView('signup')} 
-                className="text-indigo-500 hover:underline font-semibold"
+                disabled={loading}
+                className="text-indigo-500 hover:underline font-semibold disabled:opacity-40"
               >
                 Sign Up
               </button>
@@ -247,7 +293,8 @@ export default function Auth() {
               Already have an account?{' '}
               <button 
                 onClick={() => setActiveView('login')} 
-                className="text-indigo-500 hover:underline font-semibold"
+                disabled={loading}
+                className="text-indigo-500 hover:underline font-semibold disabled:opacity-40"
               >
                 Log In
               </button>
@@ -258,7 +305,8 @@ export default function Auth() {
               Remembered your password?{' '}
               <button 
                 onClick={() => setActiveView('login')} 
-                className="text-indigo-500 hover:underline font-semibold"
+                disabled={loading}
+                className="text-indigo-500 hover:underline font-semibold disabled:opacity-40"
               >
                 Log In
               </button>

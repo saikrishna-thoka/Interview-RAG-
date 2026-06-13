@@ -4,7 +4,7 @@ import { FileText, Mail, Phone, GraduationCap, Briefcase, Award, CheckCircle, Ar
 import { useAppStore } from '../store/useAppStore';
 
 export default function ResumeAnalysis() {
-  const { extractedData, setActiveView } = useAppStore();
+  const { extractedData, setActiveView, user } = useAppStore();
 
   if (!extractedData) {
     return (
@@ -104,11 +104,11 @@ export default function ResumeAnalysis() {
             <div className="flex flex-col space-y-1 text-xs text-muted-foreground font-mono">
               <span className="flex items-center space-x-1.5">
                 <Mail className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{data.email}</span>
+                <span>{data.email || user?.email || 'alex.mercer@gmail.com'}</span>
               </span>
               <span className="flex items-center space-x-1.5">
                 <Phone className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{data.phone}</span>
+                <span>{data.phone || '(555) 019-2834'}</span>
               </span>
             </div>
           </div>

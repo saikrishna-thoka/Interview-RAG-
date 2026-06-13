@@ -7,7 +7,10 @@ import {
 import { useAppStore } from '../store/useAppStore';
 
 export default function DashboardHome() {
-  const { setActiveView, uploadedResume, reports, groqKey, setSelectedReportId } = useAppStore();
+  const { 
+    setActiveView, uploadedResume, reports, 
+    activeInterviews, resumeInterviewSession, setSelectedReportId 
+  } = useAppStore();
 
   // Calculate statistics
   const totalInterviews = reports.length;
@@ -136,6 +139,40 @@ export default function DashboardHome() {
         
         {/* Left Side: Recent Activity Logs (2 cols) */}
         <div className="lg:col-span-2 space-y-4">
+          
+          {activeInterviews && activeInterviews.length > 0 && (
+            <div className="space-y-3 mb-6 bg-indigo-500/5 p-5 border border-indigo-500/10 rounded-3xl">
+              <h3 className="font-extrabold text-xs text-indigo-400 flex items-center space-x-2 uppercase tracking-wider">
+                <PlayCircle className="w-4 h-4 text-indigo-500 animate-pulse" />
+                <span>Resume Active Interview Sessions</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {activeInterviews.map((interview) => (
+                  <div 
+                    key={interview.id} 
+                    className="p-4 rounded-2xl bg-card border border-border/80 hover:border-indigo-500/30 transition-all flex justify-between items-center shadow-sm"
+                  >
+                    <div className="space-y-1 overflow-hidden pr-2">
+                      <h4 className="font-bold text-xs text-foreground truncate">{interview.role}</h4>
+                      <div className="flex items-center space-x-2 text-[9px] text-muted-foreground font-semibold">
+                        <span>{interview.difficulty}</span>
+                        <span>&bull;</span>
+                        <span>{new Date(interview.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => resumeInterviewSession(interview)}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[9px] rounded-lg transition-colors flex items-center space-x-1 flex-shrink-0"
+                    >
+                      <span>Resume</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between px-2">
             <h3 className="font-extrabold text-lg flex items-center space-x-2">
               <History className="w-4 h-4 text-indigo-500" />

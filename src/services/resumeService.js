@@ -1,10 +1,7 @@
-import { supabase } from './supabaseClient';
 import { useAppStore } from '../store/useAppStore';
 
-const isSupabaseConfigured = !!(
-  import.meta.env.VITE_SUPABASE_URL && 
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const isSupabaseConfigured = false;
+const supabase = null;
 
 export const resumeService = {
   uploadResume: async (file) => {

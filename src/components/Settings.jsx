@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  User, Shield, Key, Bell, CreditCard, 
-  Eye, EyeOff, Save, Check, RefreshCw, Sparkles 
+  User, Bell, CreditCard, 
+  Eye, EyeOff, Save, Check, RefreshCw, Sparkles,
+  Database, WifiOff, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export default function Settings() {
   const { 
     user, theme, setTheme, activeSubscription, 
-    notifications, markNotificationsRead 
+    groqKey, setGroqKey, supabaseConnectionStatus, isSupabaseConfigured
   } = useAppStore();
 
   const [name, setName] = useState(user?.name || 'Alex Mercer');
-  const [email, setEmail] = useState(user?.email || 'alex.mercer@gmail.com');
+  const email = user?.email || 'alex.mercer@gmail.com';
   const [visibleKey, setVisibleKey] = useState(false);
-  const [tempKey, setTempKey] = useState(groqKey);
+  const [tempKey, setTempKey] = useState(groqKey || '');
   const [saveSuccess, setSaveSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('profile');
 

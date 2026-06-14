@@ -1,12 +1,9 @@
 import { useAppStore } from '../store/useAppStore';
-import { supabase } from './supabaseClient';
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL_NAME = "llama-3.3-70b-versatile";
-const isSupabaseConfigured = !!(
-  import.meta.env.VITE_SUPABASE_URL && 
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const isSupabaseConfigured = false;
+const supabase = null;
 
 // Helper function to call Groq API
 async function callGroqAPI(messages, responseJson = false) {

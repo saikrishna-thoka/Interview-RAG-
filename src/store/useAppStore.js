@@ -1,10 +1,7 @@
 import { create } from 'zustand';
-import { supabase } from '../services/supabaseClient';
 
-const isSupabaseConfigured = !!(
-  import.meta.env.VITE_SUPABASE_URL && 
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const isSupabaseConfigured = false;
+const supabase = null;
 
 export const useAppStore = create((set, get) => ({
   // Theme state
@@ -23,16 +20,26 @@ export const useAppStore = create((set, get) => ({
     get().setTheme(nextTheme);
   },
 
+  // Groq API Key state
+  groqKey: localStorage.getItem('groq_api_key') || '',
+  setGroqKey: (key) => {
+    localStorage.setItem('groq_api_key', key);
+    set({ groqKey: key });
+  },
+
   // Auth state
   user: null,
   session: null,
   authInitialized: false,
+  isSupabaseConfigured: isSupabaseConfigured,
+  supabaseConnectionStatus: 'checking', // 'checking', 'connected', 'disconnected', 'unconfigured'
   
   initializeAuth: async () => {
     if (!isSupabaseConfigured) {
       console.warn("Supabase not configured. Using local mock guest auth.");
+      set({ supabaseConnectionStatus: 'unconfigured', authInitialized: true });
       const mockUser = JSON.parse(localStorage.getItem('user')) || null;
-      set({ user: mockUser, authInitialized: true });
+      set({ user: mockUser });
       if (mockUser) {
         get().fetchUserResume();
         get().fetchReports();
@@ -40,22 +47,48 @@ export const useAppStore = create((set, get) => ({
       return;
     }
 
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    const rawUser = session?.user || null;
-    const user = rawUser ? {
-      ...rawUser,
-      name: rawUser.user_metadata?.full_name || rawUser.user_metadata?.name || rawUser.email?.split('@')[0] || 'Candidate'
-    } : null;
-    
-    set({ user, session, authInitialized: true });
-    
-    if (user) {
-      // Pre-load user details
-      await get().fetchUserResume();
-      await get().fetchReports();
-      await get().fetchActiveInterviews();
-      await get().fetchSubscription();
+    // Test Supabase connection
+    set({ supabaseConnectionStatus: 'checking' });
+    try {
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
+      const rawUser = session?.user || null;
+      const user = rawUser ? {
+        ...rawUser,
+        name: rawUser.user_metadata?.full_name || rawUser.user_metadata?.name || rawUser.email?.split('@')[0] || 'Candidate'
+      } : null;
+
+      // Ping table to verify query capability
+      const { error: pingError } = await supabase.from('subscription_plans').select('id').limit(1);
+      if (pingError) throw pingError;
+
+      set({ 
+        user, 
+        session, 
+        authInitialized: true,
+        supabaseConnectionStatus: 'connected'
+      });
+      
+      if (user) {
+        // Pre-load user details
+        await get().fetchUserResume();
+        await get().fetchReports();
+        await get().fetchActiveInterviews();
+        await get().fetchSubscription();
+      }
+    } catch (e) {
+      console.error("Supabase connection / initialization error:", e);
+      set({ 
+        authInitialized: true,
+        supabaseConnectionStatus: 'disconnected'
+      });
+      // Fallback to local guest mock
+      const mockUser = JSON.parse(localStorage.getItem('user')) || null;
+      set({ user: mockUser });
+      if (mockUser) {
+        get().fetchUserResume();
+        get().fetchReports();
+      }
     }
 
     // Subscribe to auth state changes

@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, ArrowLeft, Cpu, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { supabase } from '../services/supabaseClient';
 
-const isSupabaseConfigured = !!(
-  import.meta.env.VITE_SUPABASE_URL && 
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const isSupabaseConfigured = false;
+const supabase = null;
 
 export default function Auth() {
   const { activeView, setActiveView, login, signup, loginWithGoogle } = useAppStore();
